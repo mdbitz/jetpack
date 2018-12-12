@@ -25,11 +25,13 @@ import {
 	getSiteAdminUrl,
 	getApiNonce,
 	getApiRootUrl,
-	userCanManageModules
+	userCanManageModules,
+	userCanConnectSite
 } from 'state/initial-state';
 import { areThereUnsavedSettings, clearUnsavedSettingsFlag, showWelcomeForNewPlan } from 'state/settings';
 import { getSearchTerm } from 'state/search';
 import AtAGlance from 'at-a-glance/index.jsx';
+import MyPlan from 'my-plan/index.jsx';
 import Plans from 'plans/index.jsx';
 import Footer from 'components/footer';
 import SupportCard from 'components/support-card';
@@ -42,9 +44,11 @@ import analytics from 'lib/analytics';
 import restApi from 'rest-api';
 import { getTracksUserData } from 'state/initial-state';
 import WelcomeNewPlan from 'components/welcome-new-plan';
+import QueryRewindStatus from 'components/data/query-rewind-status';
+import { getRewindStatus } from 'state/rewind';
 
-const Main = React.createClass( {
-	componentWillMount: function() {
+class Main extends React.Component {
+	componentWillMount() {
 		this.props.setInitialState();
 		restApi.setApiRoot( this.props.apiRoot );
 		restApi.setApiNonce( this.props.apiNonce );
@@ -54,13 +58,13 @@ const Main = React.createClass( {
 		window.addEventListener( 'beforeunload', this.onBeforeUnload );
 		// Handles transition between routes handled by react-router
 		this.props.router.listenBefore( this.routerWillLeave );
-	},
+	}
 
 	/*
 	 * Returns a string if there are unsaved module settings thus showing a confirm dialog to the user
 	 * according to the `beforeunload` event handling specification
 	 */
-	onBeforeUnload() {
+	onBeforeUnload = () => {
 		if ( this.props.areThereUnsavedSettings ) {
 			if ( confirm( __( 'There are unsaved settings in this tab that will be lost if you leave it. Proceed?' ) ) ) {
 				this.props.clearUnsavedSettingsFlag();
@@ -68,14 +72,14 @@ const Main = React.createClass( {
 				return false;
 			}
 		}
-	},
+	};
 
 	/*
  	 * Shows a confirmation dialog if there are unsaved module settings.
  	 *
  	 * Return true or false according to the history.listenBefore specification which is part of react-router
 	 */
-	routerWillLeave() {
+	routerWillLeave = () => {
 		if ( this.props.areThereUnsavedSettings ) {
 			if ( confirm( __( 'There are unsaved settings in this tab that will be lost if you leave it. Proceed?' ) ) ) {
 				window.setTimeout( this.props.clearUnsavedSettingsFlag, 10 );
@@ -83,9 +87,9 @@ const Main = React.createClass( {
 				return false;
 			}
 		}
-	},
+	};
 
-	initializeAnalyitics() {
+	initializeAnalyitics = () => {
 		const tracksUser = this.props.tracksUserData;
 		if ( tracksUser ) {
 			analytics.initialize(
@@ -93,9 +97,9 @@ const Main = React.createClass( {
 				tracksUser.username
 			);
 		}
-	},
+	};
 
-	shouldComponentUpdate: function( nextProps ) {
+	shouldComponentUpdate( nextProps ) {
 		// If user triggers Skip to main content or Skip to toolbar with keyboard navigation, stay in the same tab.
 		if ( includes( [ '/wpbody-content', '/wp-toolbar' ], nextProps.route.path ) ) {
 			return false;
@@ -106,8 +110,9 @@ const Main = React.createClass( {
 			nextProps.isLinked !== this.props.isLinked ||
 			nextProps.route.path !== this.props.route.path ||
 			nextProps.searchTerm !== this.props.searchTerm ||
-			nextProps.newPlanActivated !== this.props.newPlanActivated;
-	},
+			nextProps.newPlanActivated !== this.props.newPlanActivated ||
+			nextProps.rewindStatus !== this.props.rewindStatus;
+	}
 
 	componentDidUpdate( prevProps ) {
 		// Not taking into account development mode here because changing the connection
@@ -118,14 +123,14 @@ const Main = React.createClass( {
 			$items.find( 'a[href$="#/settings"]' ).hide();
 			$items.find( 'a[href$="admin.php?page=stats"]' ).hide();
 		}
-	},
+	}
 
 	componentWillReceiveProps( nextProps ) {
 		if ( nextProps.jumpStartStatus !== this.props.jumpStartStatus ||
 			nextProps.isJumpstarting !== this.props.isJumpstarting ) {
 			this.handleJumpstart( nextProps );
 		}
-	},
+	}
 
 	/**
 	 *
@@ -134,7 +139,7 @@ const Main = React.createClass( {
 	 * - the jumpstart is complete
 	 * @param  {Object} nextProps The next props as received by componentWillReceiveProps
 	 */
-	handleJumpstart( nextProps ) {
+	handleJumpstart = nextProps => {
 		const history = createHistory();
 		const willShowJumpStart = nextProps.jumpStartStatus;
 		const willBeJumpstarting = nextProps.isJumpstarting;
@@ -147,9 +152,9 @@ const Main = React.createClass( {
 			window.location.hash = 'dashboard';
 			history.push( window.location.pathname + '?page=jetpack#/dashboard' );
 		}
-	},
+	};
 
-	renderMainContent: function( route ) {
+	renderMainContent = route => {
 		// Track page views
 		this.props.isSiteConnected && analytics.tracks.recordEvent( 'jetpack_wpa_page_view', { path: route } );
 
@@ -164,7 +169,7 @@ const Main = React.createClass( {
 			);
 		}
 
-		if ( ! this.props.siteConnectionStatus ) {
+		if ( ! this.props.siteConnectionStatus && this.props.userCanConnectSite ) {
 			return (
 				<div aria-live="assertive">
 					<JetpackConnect />
@@ -186,16 +191,28 @@ const Main = React.createClass( {
 			}
 		}
 
+		const settingsNav = <NavigationSettings route={ this.props.route } siteRawUrl={ this.props.siteRawUrl } siteAdminUrl={ this.props.siteAdminUrl } />;
 		let pageComponent,
-			navComponent = <Navigation route={ this.props.route }/>,
-			settingsNav = <NavigationSettings route={ this.props.route } siteRawUrl={ this.props.siteRawUrl } siteAdminUrl={ this.props.siteAdminUrl } />;
+			navComponent = <Navigation route={ this.props.route } />;
 
 		switch ( route ) {
 			case '/dashboard':
-				pageComponent = <AtAGlance siteRawUrl={ this.props.siteRawUrl } siteAdminUrl={ this.props.siteAdminUrl } />;
+				pageComponent = <AtAGlance
+					siteRawUrl={ this.props.siteRawUrl }
+					siteAdminUrl={ this.props.siteAdminUrl }
+					rewindStatus={ this.props.rewindStatus } />;
+				break;
+			case '/my-plan':
+				pageComponent = <MyPlan
+					siteRawUrl={ this.props.siteRawUrl }
+					siteAdminUrl={ this.props.siteAdminUrl }
+					rewindStatus={ this.props.rewindStatus } />;
 				break;
 			case '/plans':
-				pageComponent = <Plans siteRawUrl={ this.props.siteRawUrl } siteAdminUrl={ this.props.siteAdminUrl } />;
+				pageComponent = <Plans
+					siteRawUrl={ this.props.siteRawUrl }
+					siteAdminUrl={ this.props.siteAdminUrl }
+					rewindStatus={ this.props.rewindStatus } />;
 				break;
 			case '/settings':
 			case '/general':
@@ -205,19 +222,24 @@ const Main = React.createClass( {
 			case '/discussion':
 			case '/writing':
 			case '/sharing':
+			case '/privacy':
 				navComponent = settingsNav;
 				pageComponent = <SearchableSettings
 					route={ this.props.route }
 					siteAdminUrl={ this.props.siteAdminUrl }
 					siteRawUrl={ this.props.siteRawUrl }
-					searchTerm={ this.props.searchTerm } />;
+					searchTerm={ this.props.searchTerm }
+					rewindStatus={ this.props.rewindStatus } />;
 				break;
 
 			default:
 				// If no route found, kick them to the dashboard and do some url/history trickery
 				const history = createHistory();
 				history.replace( window.location.pathname + '?page=jetpack#/dashboard' );
-				pageComponent = <AtAGlance siteRawUrl={ this.props.siteRawUrl } siteAdminUrl={ this.props.siteAdminUrl } />;
+				pageComponent = <AtAGlance
+					siteRawUrl={ this.props.siteRawUrl }
+					siteAdminUrl={ this.props.siteAdminUrl }
+					rewindStatus={ this.props.rewindStatus } />;
 		}
 
 		window.wpNavMenuClassChange();
@@ -233,13 +255,14 @@ const Main = React.createClass( {
 				/>
 			</div>
 		);
-	},
+	};
 
-	render: function() {
+	render() {
 		return (
 			<div>
 				<Masthead route={ this.props.route } />
 					<div className="jp-lower">
+						{ this.props.isSiteConnected && <QueryRewindStatus /> }
 						<AdminNotices />
 						<JetpackNotices />
 						{ this.renderMainContent( this.props.route.path ) }
@@ -251,8 +274,7 @@ const Main = React.createClass( {
 			</div>
 		);
 	}
-
-} );
+}
 
 export default connect(
 	state => {
@@ -269,8 +291,10 @@ export default connect(
 			tracksUserData: getTracksUserData( state ),
 			areThereUnsavedSettings: areThereUnsavedSettings( state ),
 			userCanManageModules: userCanManageModules( state ),
+			userCanConnectSite: userCanConnectSite( state ),
 			isSiteConnected: isSiteConnected( state ),
 			newPlanActivated: showWelcomeForNewPlan( state ),
+			rewindStatus: getRewindStatus( state ),
 		};
 	},
 	( dispatch ) => ( {
@@ -289,41 +313,43 @@ export default connect(
 window.wpNavMenuClassChange = function() {
 	let hash = window.location.hash;
 	const settingRoutes = [
-		'#/settings',
-		'#/general',
-		'#/discussion',
-		'#/security',
-		'#/traffic',
-		'#/writing',
-		'#/sharing'
-	],
-	dashboardRoutes = [
-		'#/',
-		'#/dashboard',
-		'#/plans'
-	];
+			'#/settings',
+			'#/general',
+			'#/discussion',
+			'#/security',
+			'#/traffic',
+			'#/writing',
+			'#/sharing',
+			'#/privacy',
+		],
+		dashboardRoutes = [
+			'#/',
+			'#/dashboard',
+			'#/my-plan',
+			'#/plans',
+		];
 
 	// Clear currents
 	jQuery( '.current' ).each( function( i, obj ) {
 		jQuery( obj ).removeClass( 'current' );
 	} );
 
-	hash = hash.split( '?' )[0];
+	hash = hash.split( '?' )[ 0 ];
 	if ( includes( dashboardRoutes, hash ) ) {
-		let subNavItem = jQuery( '#toplevel_page_jetpack' ).find( 'li' ).filter( function( index ) {
+		const subNavItem = jQuery( '#toplevel_page_jetpack' ).find( 'li' ).filter( function( index ) {
 			return index === 1;
 		} );
-		subNavItem[0].classList.add( 'current' );
+		subNavItem[ 0 ].classList.add( 'current' );
 	} else if ( includes( settingRoutes, hash ) ) {
-		let subNavItem = jQuery( '#toplevel_page_jetpack' ).find( 'li' ).filter( function( index ) {
+		const subNavItem = jQuery( '#toplevel_page_jetpack' ).find( 'li' ).filter( function( index ) {
 			return index === 2;
 		} );
-		subNavItem[0].classList.add( 'current' );
+		subNavItem[ 0 ].classList.add( 'current' );
 	}
 
 	const $body = jQuery( 'body' );
 
-	$body.on( 'click', 'a[href$="#/dashboard"], a[href$="#/settings"], .jp-dash-section-header__settings[href="#/security"], .dops-button[href="#/plans"]', function() {
+	$body.on( 'click', 'a[href$="#/dashboard"], a[href$="#/settings"], .jp-dash-section-header__settings[href="#/security"], .dops-button[href="#/my-plan"], .dops-button[href="#/plans"]', function() {
 		window.scrollTo( 0, 0 );
 	} );
 

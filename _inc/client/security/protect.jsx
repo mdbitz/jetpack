@@ -16,12 +16,12 @@ import analytics from 'lib/analytics';
 import { FormFieldset, FormLegend, FormLabel } from 'components/forms';
 import { ModuleToggle } from 'components/module-toggle';
 import {
-	ModuleSettingsForm as moduleSettingsForm,
-} from 'components/module-settings/module-settings-form';
+	withModuleSettingsFormHelpers as withModuleSettingsFormHelpers,
+} from 'components/module-settings/with-module-settings-form-helpers';
 import SettingsCard from 'components/settings-card';
 import SettingsGroup from 'components/settings-group';
 
-export const Protect = moduleSettingsForm(
+export const Protect = withModuleSettingsFormHelpers(
 	class extends Component {
 		state = {
 			whitelist: this.props.getOptionValue( 'jetpack_protect_global_whitelist' )
@@ -103,7 +103,15 @@ export const Protect = moduleSettingsForm(
 						header={ toggle }
 						className={ classNames( { 'jp-foldable-settings-disable': unavailableInDevMode } ) }
 					>
-						<SettingsGroup hasChild disableInDevMode module={ this.props.getModule( 'protect' ) }>
+						<SettingsGroup
+							hasChild
+							disableInDevMode
+							module={ this.props.getModule( 'protect' ) }
+							support={ {
+								text: __( 'Protects your site from traditional and distributed brute force login attacks.' ),
+								link: 'https://jetpack.com/support/protect/',
+							} }
+							>
 							<FormFieldset>
 								{ this.props.currentIp &&
 									<div>

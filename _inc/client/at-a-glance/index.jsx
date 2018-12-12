@@ -6,12 +6,12 @@ import { connect } from 'react-redux';
 import { translate as __ } from 'i18n-calypso';
 import analytics from 'lib/analytics';
 import chunk from 'lodash/chunk';
-import includes from 'lodash/includes';
+import get from 'lodash/get';
 
 /**
  * Internal dependencies
  */
-import { ModuleSettingsForm as moduleSettingsForm } from 'components/module-settings/module-settings-form';
+import { withModuleSettingsFormHelpers } from 'components/module-settings/with-module-settings-form-helpers';
 import DashSectionHeader from 'components/dash-section-header';
 import DashActivity from './activity';
 import DashStats from './stats/index.jsx';
@@ -22,6 +22,7 @@ import DashAkismet from './akismet';
 import DashBackups from './backups';
 import DashPluginUpdates from './plugins';
 import DashPhoton from './photon';
+import DashSearch from './search';
 import DashConnections from './connections';
 import QuerySitePlugins from 'components/data/query-site-plugins';
 import QuerySite from 'components/data/query-site';
@@ -31,7 +32,7 @@ import {
 	userIsSubscriber
 } from 'state/initial-state';
 import { isDevMode } from 'state/connection';
-import { getActiveFeatures } from 'state/site';
+import { getModuleOverride } from 'state/modules';
 
 const renderPairs = layout => layout.map( item => (
 	[
@@ -59,15 +60,14 @@ class AtAGlance extends Component {
 		const trackSecurityClick = () => analytics.tracks.recordJetpackClick( 'aag_manage_security_wpcom' );
 		const securityHeader = <DashSectionHeader
 					label={ __( 'Security' ) }
-					settingsPath={ this.props.userCanManageModules && '#security' }
-					externalLink={
-						this.props.isDevMode || ! this.props.userCanManageModules
+					settingsPath={ this.props.userCanManageModules ? '#security' : undefined }
+					externalLink={ this.props.isDevMode || ! this.props.userCanManageModules
 						? ''
-						: __( 'Manage security on WordPress.com' )
+						: __( 'Manage security settings' )
 					}
 					externalLinkPath={ this.props.isDevMode
 						? ''
-						: 'https://wordpress.com/settings/security/' + this.props.siteRawUrl
+						: '#security'
 					}
 					externalLinkClick={ trackSecurityClick }
 				/>;
@@ -77,42 +77,61 @@ class AtAGlance extends Component {
 					<DashConnections />
 				</div>
 			);
+		const isRewindActive = 'active' === get( this.props.rewindStatus, [ 'state' ], false );
 		const securityCards = [
-			<DashProtect { ...settingsProps } />,
-			<DashScan { ...settingsProps } siteRawUrl={ this.props.siteRawUrl } />,
-			<DashBackups { ...settingsProps } siteRawUrl={ this.props.siteRawUrl } />,
-			<DashMonitor { ...settingsProps } />,
+			<DashScan
+				{ ...settingsProps }
+				siteRawUrl={ this.props.siteRawUrl }
+				isRewindActive={ isRewindActive }
+			/>,
+			<DashBackups
+				{ ...settingsProps }
+				siteRawUrl={ this.props.siteRawUrl }
+				isRewindActive={ isRewindActive }
+			/>,
 			<DashAkismet { ...urls } />,
 			<DashPluginUpdates { ...settingsProps } { ...urls } />
 		];
 
-		// @todo: determine if rewind is active or not rather than just activity log
-		// const isRewindActive = includes( this.props.activeFeatures, 'jetpack-rewind' );
-		const showActivityLogCard = includes( this.props.activeFeatures, 'activity-log' );
-		
-		// Maybe add the activity log card
-		showActivityLogCard && securityCards.unshift( <DashActivity { ...settingsProps } siteRawUrl={ this.props.siteRawUrl } /> );
+		if ( 'inactive' !== this.props.getModuleOverride( 'protect' ) ) {
+			securityCards.push( <DashProtect { ...settingsProps } /> );
+		}
+		if ( 'inactive' !== this.props.getModuleOverride( 'monitor' ) ) {
+			securityCards.push( <DashMonitor { ...settingsProps } /> );
+		}
+
+		// Maybe add the rewind card
+		isRewindActive && securityCards.unshift( <DashActivity { ...settingsProps } siteRawUrl={ this.props.siteRawUrl } /> );
 
 		// If user can manage modules, we're in an admin view, otherwise it's a non-admin view.
 		if ( this.props.userCanManageModules ) {
+			const pairs = [
+				{
+					header: securityHeader,
+					cards: securityCards
+				}
+			];
+
+			const performanceCards = [];
+			if ( 'inactive' !== this.props.getModuleOverride( 'photon' ) ) {
+				performanceCards.push( <DashPhoton { ...settingsProps } /> );
+			}
+			if ( 'inactive' !== this.props.getModuleOverride( 'search' ) ) {
+				performanceCards.push( <DashSearch { ...settingsProps } /> );
+			}
+			if ( performanceCards.length ) {
+				pairs.push( {
+					header: <DashSectionHeader label={ __( 'Performance' ) } />,
+					cards: performanceCards
+				} );
+			}
+
 			return (
 				<div className="jp-at-a-glance">
 					<QuerySitePlugins />
 					<QuerySite />
 					<DashStats { ...settingsProps } { ...urls } />
-
-					{
-						renderPairs( [
-							{
-								header: securityHeader,
-								cards: securityCards
-							},
-							{
-								header: <DashSectionHeader label={ __( 'Performance' ) } />,
-								cards: [ <DashPhoton { ...settingsProps } /> ]
-							}
-						] )
-					}
+					{ renderPairs( pairs ) }
 
 					{ connections }
 				</div>
@@ -160,7 +179,7 @@ export default connect(
 			userCanViewStats: userCanViewStats( state ),
 			userIsSubscriber: userIsSubscriber( state ),
 			isDevMode: isDevMode( state ),
-			activeFeatures: getActiveFeatures( state ),
+			getModuleOverride: module_name => getModuleOverride( state, module_name ),
 		};
 	}
-)( moduleSettingsForm( AtAGlance ) );
+)( withModuleSettingsFormHelpers( AtAGlance ) );

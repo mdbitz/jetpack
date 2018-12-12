@@ -13,7 +13,7 @@ import Banner from 'components/banner';
 /**
  * Internal dependencies
  */
-import { ModuleSettingsForm as moduleSettingsForm } from 'components/module-settings/module-settings-form';
+import { withModuleSettingsFormHelpers } from 'components/module-settings/with-module-settings-form-helpers';
 import { getModules } from 'state/modules';
 import { isModuleFound } from 'state/search';
 import SettingsCard from 'components/settings-card';
@@ -21,8 +21,12 @@ import SettingsGroup from 'components/settings-group';
 import { userCanManageModules } from 'state/initial-state';
 import { isDevMode, isUnavailableInDevMode } from 'state/connection';
 
-export const SearchableModules = moduleSettingsForm(
+export const SearchableModules = withModuleSettingsFormHelpers(
 	class extends Component {
+		handleBannerClick = module => {
+			return () => this.props.updateOptions( { [ module ]: true } );
+		}
+
 		render() {
 			// Only admins plz
 			if ( ! this.props.canManageModules ) {
@@ -42,7 +46,6 @@ export const SearchableModules = moduleSettingsForm(
 				'enhanced-distribution',
 				'json-api',
 				'latex',
-				'monitor',
 				'notes',
 				'shortcodes',
 				'shortlinks',
@@ -73,7 +76,7 @@ export const SearchableModules = moduleSettingsForm(
 								description={ moduleData.description }
 								href="javascript:void( 0 )"
 								icon="cog"
-								onClick={ this.props.updateOptions.bind( null, { [ moduleData.module ]: true } ) }
+								onClick={ this.handleBannerClick( moduleData.module ) }
 								title={ moduleData.name }
 							/>
 						);
@@ -109,7 +112,7 @@ class ActiveCard extends Component {
 				<SettingsGroup
 					disableInDevMode={ devMode }
 					module={ { module: m.module } }
-					support={ m.learn_more_button }
+					support={ { link: m.learn_more_button } }
 				>
 					{ m.description }
 				</SettingsGroup>

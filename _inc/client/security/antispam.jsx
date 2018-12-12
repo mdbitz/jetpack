@@ -21,12 +21,12 @@ import analytics from 'lib/analytics';
  */
 import { FormFieldset, FormLabel } from 'components/forms';
 import {
-	ModuleSettingsForm as moduleSettingsForm,
-} from 'components/module-settings/module-settings-form';
+	withModuleSettingsFormHelpers as withModuleSettingsFormHelpers,
+} from 'components/module-settings/with-module-settings-form-helpers';
 import SettingsCard from 'components/settings-card';
 import SettingsGroup from 'components/settings-group';
 
-export const Antispam = moduleSettingsForm(
+export const Antispam = withModuleSettingsFormHelpers(
 	class extends Component {
 		state = {
 			apiKey: this.props.getOptionValue( 'wordpress_api_key' ),
@@ -137,7 +137,12 @@ export const Antispam = moduleSettingsForm(
 					feature={ FEATURE_SPAM_AKISMET_PLUS }
 				>
 					<FoldableCard onOpen={ this.trackOpenCard } header={ foldableHeader }>
-						<SettingsGroup support="https://akismet.com/jetpack/">
+						<SettingsGroup
+							support={ {
+								text: __( 'Removes spam from comments and contact forms.' ),
+								link: 'https://akismet.com/jetpack/',
+							} }
+							>
 							<FormFieldset>
 								<FormLabel>
 									<span className="jp-form-label-wide">{ __( 'Your API key' ) }</span>

@@ -13,14 +13,16 @@ import Traffic from 'traffic';
 import Writing from 'writing/index.jsx';
 import Sharing from 'sharing/index.jsx';
 import SearchableModules from 'searchable-modules/index.jsx';
+import Privacy from 'privacy/index.jsx';
 
-export default React.createClass( {
-	displayName: 'SearchableSettings',
+export default class extends React.Component {
+	static displayName = 'SearchableSettings';
 
 	render() {
 		const commonProps = {
 			route: this.props.route,
-			searchTerm: this.props.searchTerm
+			searchTerm: this.props.searchTerm,
+			rewindStatus: this.props.rewindStatus,
 		};
 
 		return (
@@ -45,6 +47,7 @@ export default React.createClass( {
 				/>
 				<Security
 					siteAdminUrl={ this.props.siteAdminUrl }
+					siteRawUrl={ this.props.siteRawUrl }
 					active={ ( '/security' === this.props.route.path ) }
 					{ ...commonProps }
 				/>
@@ -57,8 +60,8 @@ export default React.createClass( {
 				<Writing
 					siteAdminUrl={ this.props.siteAdminUrl }
 					active={ (
-						'/writing' === this.props.route.path
-						|| '/settings' === this.props.route.path
+						'/writing' === this.props.route.path ||
+						'/settings' === this.props.route.path
 					) }
 					{ ...commonProps }
 				/>
@@ -67,8 +70,12 @@ export default React.createClass( {
 					active={ ( '/sharing' === this.props.route.path ) }
 					{ ...commonProps }
 				/>
+				<Privacy
+					active={ ( '/privacy' === this.props.route.path ) }
+					{ ...commonProps }
+				/>
 				<SearchableModules searchTerm={ this.props.searchTerm } />
 			</div>
 		);
 	}
-} );
+}

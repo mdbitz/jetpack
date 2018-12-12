@@ -14,9 +14,10 @@ import analytics from 'lib/analytics';
 /**
  * Internal dependencies
  */
-import { ModuleSettingsForm as moduleSettingsForm } from 'components/module-settings/module-settings-form';
+import { withModuleSettingsFormHelpers } from 'components/module-settings/with-module-settings-form-helpers';
 import Card from 'components/card';
 import SectionHeader from 'components/section-header';
+import SupportInfo from 'components/support-info';
 import { ModuleToggle } from 'components/module-toggle';
 import { isDevMode } from 'state/connection';
 import { getModule as _getModule } from 'state/modules';
@@ -28,15 +29,27 @@ import {
 } from 'state/initial-state';
 
 export class DashItem extends Component {
-	trackMonitorSettingsClick() {
-		analytics.tracks.recordJetpackClick( {
-			target: 'monitor-settings',
-			page: 'aag'
-		} );
-	}
+	static propTypes = {
+		label: PropTypes.string,
+		status: PropTypes.string,
+		statusText: PropTypes.string,
+		disabled: PropTypes.bool,
+		module: PropTypes.string,
+		pro: PropTypes.bool,
+		isModule: PropTypes.bool,
+		support: PropTypes.object,
+	};
+
+	static defaultProps = {
+		label: '',
+		module: '',
+		pro: false,
+		isModule: true,
+		support: { text: '', link: '' },
+	};
 
 	render() {
-		let toggle, proButton = '';
+		let module, toggle, proButton = '';
 
 		const classes = classNames(
 			this.props.className,
@@ -54,7 +67,7 @@ export class DashItem extends Component {
 			};
 
 		if ( '' !== this.props.module ) {
-			toggle = ( includes( [ 'protect', 'photon', 'vaultpress', 'scan', 'backups', 'akismet' ], this.props.module ) && this.props.isDevMode ) ? '' : (
+			toggle = ( includes( [ 'monitor', 'protect', 'photon', 'vaultpress', 'scan', 'backups', 'akismet', 'search' ], this.props.module ) && this.props.isDevMode ) ? '' : (
 				<ModuleToggle
 					slug={ this.props.module }
 					activated={ this.props.getOptionValue( this.props.module ) }
@@ -69,7 +82,7 @@ export class DashItem extends Component {
 					toggle = (
 						<a href={ this.props.isDevMode
 							? this.props.siteAdminUrl + 'update-core.php'
-							: 'https://wordpress.com/plugins/' + this.props.siteRawUrl
+							: 'https://wordpress.com/plugins/manage/' + this.props.siteRawUrl
 						} >
 							<SimpleNotice
 								showDismiss={ false }
@@ -86,17 +99,8 @@ export class DashItem extends Component {
 				}
 			}
 
-			if ( 'monitor' === this.props.module ) {
-				toggle = ! this.props.isDevMode && this.props.getOptionValue( this.props.module ) && (
-					<Button
-						onClick={ this.trackMonitorSettingsClick }
-						href={ 'https://wordpress.com/settings/security/' + this.props.siteRawUrl }
-						compact>
-						{
-							__( 'Settings' )
-						}
-					</Button>
-				);
+			if ( 'rewind' === this.props.module ) {
+				toggle = null;
 			}
 		}
 
@@ -116,6 +120,10 @@ export class DashItem extends Component {
 			}
 		}
 
+		if ( this.props.module && this.props.getModule ) {
+			module = this.props.getModule( this.props.module );
+		}
+
 		return (
 			<div className={ classes }>
 				<SectionHeader
@@ -126,6 +134,13 @@ export class DashItem extends Component {
 				</SectionHeader>
 				<Card className="jp-dash-item__card" href={ this.props.href }>
 					<div className="jp-dash-item__content">
+						{
+							this.props.support.link &&
+								<SupportInfo
+									module={ module }
+									{ ...this.props.support }
+								/>
+						}
 						{ this.props.children }
 					</div>
 				</Card>
@@ -133,23 +148,6 @@ export class DashItem extends Component {
 		);
 	}
 }
-
-DashItem.propTypes = {
-	label: PropTypes.string,
-	status: PropTypes.string,
-	statusText: PropTypes.string,
-	disabled: PropTypes.bool,
-	module: PropTypes.string,
-	pro: PropTypes.bool,
-	isModule: PropTypes.bool,
-};
-
-DashItem.defaultProps = {
-	label: '',
-	module: '',
-	pro: false,
-	isModule: true,
-};
 
 export default connect(
 	( state ) => {
@@ -161,4 +159,4 @@ export default connect(
 			siteAdminUrl: getSiteAdminUrl( state )
 		};
 	}
-)( moduleSettingsForm( DashItem ) );
+)( withModuleSettingsFormHelpers( DashItem ) );

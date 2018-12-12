@@ -9,12 +9,12 @@ import analytics from 'lib/analytics';
 /**
  * Internal dependencies
  */
-import { ModuleSettingsForm as moduleSettingsForm } from 'components/module-settings/module-settings-form';
+import { withModuleSettingsFormHelpers } from 'components/module-settings/with-module-settings-form-helpers';
 import SettingsCard from 'components/settings-card';
 import SettingsGroup from 'components/settings-group';
 import { ModuleToggle } from 'components/module-toggle';
 
-export const Publicize = moduleSettingsForm(
+export const Publicize = withModuleSettingsFormHelpers(
 	class extends Component {
 		trackClickConfigure() {
 			analytics.tracks.recordJetpackClick( {
@@ -42,6 +42,8 @@ export const Publicize = moduleSettingsForm(
 							compact
 							className="jp-settings-card__configure-link"
 							onClick={ this.trackClickConfigure }
+							target="_blank"
+							rel="noopener noreferrer"
 							href={ 'https://wordpress.com/sharing/' + siteRawUrl }>
 							{ __( 'Connect your social media accounts' ) }
 						</Card>
@@ -50,6 +52,8 @@ export const Publicize = moduleSettingsForm(
 						<Card
 							compact
 							className="jp-settings-card__configure-link"
+							target="_blank"
+							rel="noopener noreferrer"
 							href={ `${ connectUrl }&from=unlinked-user-connect-publicize` }>
 							{ __( 'Connect your user account to WordPress.com to use this feature' ) }
 						</Card>
@@ -68,18 +72,22 @@ export const Publicize = moduleSettingsForm(
 					hideButton>
 					{
 						userCanManageModules && (
-							<SettingsGroup disableInDevMode module={ { module: 'publicize' } }
-								support="https://jetpack.com/support/publicize/"
-							>
+							<SettingsGroup
+								disableInDevMode
+								module={ { module: 'publicize' } }
+								support={ {
+									text: __( 'Allows you to automatically share your newest content on social media sites, ' +
+										'including Facebook and Twitter.' ),
+									link: 'https://jetpack.com/support/publicize/',
+								} }
+								>
 								<ModuleToggle
 									slug="publicize"
 									disabled={ unavailableInDevMode }
 									activated={ isActive }
 									toggling={ this.props.isSavingAnyOption( 'publicize' ) }
 									toggleModule={ this.props.toggleModuleNow }>
-									{
-										__( 'Automatically share your posts to social networks' )
-									}
+									{ __( 'Automatically share your posts to social networks' ) }
 								</ModuleToggle>
 							</SettingsGroup>
 						)

@@ -21,11 +21,10 @@ import QuerySite from 'components/data/query-site';
 import { getSiteConnectionStatus } from 'state/connection';
 import ThemesPromoCard from 'components/themes-promo-card';
 
-import PlanHeader from './plan-header';
-import PlanBody from './plan-body';
+import PlanGrid from './plan-grid';
 
-export const Plans = React.createClass( {
-	themesPromo() {
+export class Plans extends React.Component {
+	themesPromo = () => {
 		const sitePlan = this.props.sitePlan.product_slug || '';
 		const planClass = 'dev' !== this.props.plan
 			? getPlanClass( sitePlan )
@@ -39,21 +38,10 @@ export const Plans = React.createClass( {
 		}
 
 		return null;
-	},
+	};
 
-	renderContent() {
-		let sitePlan = this.props.sitePlan.product_slug || '',
-			availableFeatures = this.props.availableFeatures,
-			activeFeatures = this.props.activeFeatures,
-			themePromo = '';
-		const planClass = 'dev' !== this.props.plan
-			? getPlanClass( sitePlan )
-			: 'dev';
-		if ( 'dev' === this.props.getSiteConnectionStatus( this.props ) ) {
-			sitePlan = 'dev';
-			availableFeatures = {};
-			activeFeatures = {};
-		}
+	renderContent = () => {
+		let themePromo = '';
 
 		const premiumThemesAvailable = 'undefined' !== typeof this.props.availableFeatures[ FEATURE_UNLIMITED_PREMIUM_THEMES ],
 			premiumThemesActive = includes( this.props.activeFeatures, FEATURE_UNLIMITED_PREMIUM_THEMES ),
@@ -61,29 +49,15 @@ export const Plans = React.createClass( {
 
 		if ( showThemesPromo ) {
 			themePromo = this.themesPromo();
-
-			// Don't show the rest of the promos if theme promo available and on Free plan.
-			if ( 'is-free-plan' === planClass ) {
-				return themePromo;
-			}
 		}
 
 		return (
 			<div>
 				{ themePromo }
-				<div className="jp-landing__plans dops-card">
-					<PlanHeader plan={ sitePlan } siteRawUrl={ this.props.siteRawUrl } />
-					<PlanBody
-						plan={ sitePlan }
-						availableFeatures={ availableFeatures }
-						activeFeatures={ activeFeatures }
-						siteRawUrl={ this.props.siteRawUrl }
-						siteAdminUrl={ this.props.siteAdminUrl }
-					/>
-				</div>
+				<PlanGrid />
 			</div>
 		);
-	},
+	};
 
 	render() {
 		return (
@@ -93,7 +67,7 @@ export const Plans = React.createClass( {
 			</div>
 		);
 	}
-} );
+}
 
 export default connect(
 	( state ) => {

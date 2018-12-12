@@ -12,42 +12,54 @@ import analytics from 'lib/analytics';
 /**
  * Internal dependencies
  */
-import { getSiteConnectionStatus } from 'state/connection';
+import { getSiteConnectionStatus, getSandboxDomain } from 'state/connection';
 import { getCurrentVersion, userCanEditPosts } from 'state/initial-state';
+import { fetchSiteConnectionTest } from 'state/connection';
 
-export const Masthead = React.createClass( {
-	getDefaultProps: function() {
-		return {
-			route: { path: '' }
-		};
-	},
+export class Masthead extends React.Component {
+	static defaultProps = {
+		route: { path: '' }
+	};
 
-	trackDashClick() {
+	trackDashClick = () => {
 		analytics.tracks.recordJetpackClick( {
 			target: 'masthead',
 			path: 'nav_dashboard'
 		} );
-	},
+	};
 
-	trackSettingsClick() {
+	trackSettingsClick = () => {
 		analytics.tracks.recordJetpackClick( {
 			target: 'masthead',
 			path: 'nav_settings'
 		} );
-	},
+	};
 
-	trackLogoClick() {
+	trackLogoClick = () => {
 		analytics.tracks.recordJetpackClick( {
 			target: 'masthead',
 			path: 'logo'
 		} );
-	},
+	};
 
-	render: function() {
+	testConnection = () => {
+		return this.props.testConnection();
+	};
+
+	render() {
 		const devNotice = this.props.siteConnectionStatus === 'dev'
 			? <code>Dev Mode</code>
 			: '',
-			isDashboardView = includes( [ '/', '/dashboard', '/apps', '/plans' ], this.props.route.path ),
+			sandboxedBadge = this.props.sandboxDomain
+				? <code
+					id="sandbox-domain-badge"
+					onClick={ this.testConnection }
+					onKeyDown={ this.testConnection }
+					role="button"
+					tabIndex={ 0 }
+					title={ `Sandboxing via ${ this.props.sandboxDomain }. Click to test connection.` }>API Sandboxed</code>
+				: '',
+			isDashboardView = includes( [ '/', '/dashboard', '/apps', '/my-plan', '/plans' ], this.props.route.path ),
 			isStatic = '' === this.props.route.path;
 
 		return (
@@ -67,6 +79,7 @@ export const Masthead = React.createClass( {
 							</svg>
 						</a>
 						{ devNotice }
+						{ sandboxedBadge }
 					</div>
 					{
 						this.props.userCanEditPosts && (
@@ -98,14 +111,20 @@ export const Masthead = React.createClass( {
 			</div>
 		);
 	}
-} );
+}
 
 export default connect(
 	state => {
 		return {
 			siteConnectionStatus: getSiteConnectionStatus( state ),
+			sandboxDomain: getSandboxDomain( state ),
 			currentVersion: getCurrentVersion( state ),
 			userCanEditPosts: userCanEditPosts( state )
+		};
+	},
+	dispatch => {
+		return {
+			testConnection: () => dispatch( fetchSiteConnectionTest() )
 		};
 	}
 )( Masthead );

@@ -42,10 +42,10 @@ export function isDevVersion( state ) {
  * by JETPACK__VERSION
  *
  * @param  {Object}  state  Global state tree
- * @return {string}         Version number
+ * @return {string}         Version number. Empty string if the data is not yet available.
  */
 export function getCurrentVersion( state ) {
-	return state.jetpack.initialState.currentVersion;
+	return get( state.jetpack.initialState, 'currentVersion', '' );
 }
 
 export function getSiteRoles( state ) {
@@ -70,6 +70,10 @@ export function getSiteAdminUrl( state ) {
 
 export function isSitePublic( state ) {
 	return get( state.jetpack.initialState, [ 'connectionStatus', 'isPublic' ] );
+}
+
+export function isGutenbergAvailable( state ) {
+	return get( state.jetpack.initialState, 'is_gutenberg_available', false );
 }
 
 export function userIsSubscriber( state ) {
@@ -114,6 +118,10 @@ export function userCanDisconnectSite( state ) {
 	return get( state.jetpack.initialState.userData.currentUser.permissions, 'disconnect', false );
 }
 
+export function userCanConnectSite( state ) {
+	return get( state.jetpack.initialState.userData.currentUser.permissions, 'connect', false );
+}
+
 export function userIsMaster( state ) {
 	return get( state.jetpack.initialState.userData.currentUser, 'isMaster', false );
 }
@@ -134,6 +142,15 @@ export function getUsername( state ) {
 	return get( state.jetpack.initialState.userData.currentUser, [ 'username' ] );
 }
 
+/**
+ * Gets the current wp-admin user id
+ * @param {Object} state Global state tree
+ * @returns {int} The user id in wp-admin
+ */
+export function getUserId( state ) {
+	return get( state.jetpack.initialState.userData.currentUser, 'id' );
+}
+
 export function userCanViewStats( state ) {
 	return get( state.jetpack.initialState.userData.currentUser.permissions, 'view_stats', false );
 }
@@ -143,7 +160,7 @@ export function userCanViewStats( state ) {
  *
  * @param {object} state Global state tree
  *
- * @return string
+ * @return {string}        the URL of the icon
  */
 export function getSiteIcon( state ) {
 	return get( state.jetpack.initialState.siteData, [ 'icon' ] );
@@ -219,4 +236,15 @@ export function isAtomicSite( state ) {
  */
 export function currentThemeSupports( state, feature ) {
 	return get( state.jetpack.initialState.themeData, [ 'support', feature ], false );
+}
+
+/**
+ * Check if backups UI should be displayed.
+ *
+ * @param {object} state Global state tree
+ *
+ * @return {boolean} True if backups UI should be displayed.
+ */
+export function showBackups( state ) {
+	return get( state.jetpack.initialState.siteData, 'showBackups', true );
 }

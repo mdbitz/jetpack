@@ -156,6 +156,15 @@ class Jetpack_Related_Posts_Customize {
 			restore_previous_locale();
 		}
 
+		/**
+		 * The filter allows you to change the options used to display Related Posts in the Customizer.
+		 *
+		 * @module related-posts
+		 *
+		 * @since 4.4.0
+		 *
+		 * @param array $options Array of options used to display Related Posts in the Customizer.
+		 */
 		return apply_filters(
 			'jetpack_related_posts_customize_options', array(
 				'enabled'       => array(
@@ -182,7 +191,7 @@ class Jetpack_Related_Posts_Customize {
 				),
 				'show_thumbnails'     => array(
 					'label'        => esc_html__( 'Show thumbnails', 'jetpack' ),
-					'description'  => esc_html__( 'Use a large and visually striking layout.', 'jetpack' ),
+					'description'  => esc_html__( 'Show a thumbnail image where available.', 'jetpack' ),
 					'control_type' => 'checkbox',
 					'default'      => 1,
 					'setting_type' => 'option',
